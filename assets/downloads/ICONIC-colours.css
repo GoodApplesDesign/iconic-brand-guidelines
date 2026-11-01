@@ -1,0 +1,14 @@
+/* ICONIC Beverages colour tokens */
+:root {
+  --iconic-noir: #111111;
+  --iconic-graphite: #2E2E2E;
+  --iconic-blanc: #EDEDEA;
+  --iconic-brown: #54350F;
+  --iconic-olive: #4E5410;
+  --iconic-bronze-lite: #B4885A;
+  --iconic-gold-lite: #DDC68C;
+  --iconic-gold-gradient: linear-gradient(125deg, #6A4910 0%, #B3882F 18%, #E6C674 36%, #FAEDC2 46%, #D7B45E 56%, #9A6F22 78%, #56390C 100%);
+  --iconic-silver-gradient: linear-gradient(125deg, #5C5C5C 0%, #9E9E9E 18%, #D9D9D9 36%, #F8F8F8 46%, #C9C9C9 56%, #8C8C8C 78%, #4E4E4E 100%);
+  --iconic-bronze-gradient: linear-gradient(125deg, #55321A 0%, #9A6636 18%, #D19E68 36%, #F2D5AC 46%, #BF8A55 56%, #80502A 78%, #45280F 100%);
+  --iconic-graphite-gradient: linear-gradient(125deg, #1C1C1C 0%, #3A3A3A 18%, #5E5E5E 36%, #7C7C7C 46%, #4C4C4C 56%, #2E2E2E 78%, #151515 100%);
+}

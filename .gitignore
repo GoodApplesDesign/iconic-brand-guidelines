@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+# build caches: raw downloaded photos and rendered PNGs (the PNGs ship inside the zips)
+_build/img-src/
+_build/png/
+_build/aura-frame-*.png

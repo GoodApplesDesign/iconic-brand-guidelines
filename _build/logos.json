@@ -1,0 +1,54 @@
+{
+ "primary-stack": {
+  "w": 264.638,
+  "h": 230.637,
+  "variants": [
+   "gold",
+   "silver",
+   "bronze",
+   "graphite",
+   "gold-lite",
+   "bronze-lite",
+   "blanc",
+   "noir"
+  ]
+ },
+ "wide-stack": {
+  "w": 279.531,
+  "h": 63.217,
+  "variants": [
+   "gold",
+   "silver",
+   "bronze",
+   "graphite",
+   "gold-lite",
+   "bronze-lite",
+   "blanc",
+   "noir"
+  ]
+ },
+ "wordmark": {
+  "w": 190.484,
+  "h": 58.053,
+  "variants": [
+   "gold-lite",
+   "bronze-lite",
+   "blanc",
+   "noir"
+  ]
+ },
+ "icon": {
+  "w": 82.064,
+  "h": 83.532,
+  "variants": [
+   "gold",
+   "silver",
+   "bronze",
+   "graphite",
+   "gold-lite",
+   "bronze-lite",
+   "blanc",
+   "noir"
+  ]
+ }
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{doc_title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="assets/logo/svg/icon-gold.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="{{slug}}">
+<a class="skip" href="#main">Skip to content</a>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <a class="brand" href="index.html" aria-label="ICONIC Beverages brand guidelines home"><img src="assets/logo/svg/wide-stack-gold.svg" alt="ICONIC Beverages" width="150" height="34"></a>
+  </div>
+  <nav class="nav" aria-label="Guidelines">
+    <a class="nav-root" href="index.html"{{home_current}}>Foundations</a>
+    <ul class="nav-pages">
+{{nav}}
+    </ul>
+  </nav>
+  <div class="sidebar-foot">Brand guidelines<br>Version 1.0 &middot; 2026</div>
+</aside>
+
+<div class="shell">
+  <header class="topbar">
+    <button class="menu-btn" aria-controls="sidebar" aria-expanded="false"><span></span><span></span><span class="sr">Menu</span></button>
+    <a class="topbar-mark" href="index.html" aria-label="Home"><img src="assets/logo/svg/icon-gold.svg" alt="" width="28" height="28"></a>
+    <span class="topbar-title">Brand guidelines</span>
+  </header>
+
+  <main id="main">
+    <header class="page-head">
+      <h1 class="page-title">{{title}}</h1>
+      <div class="page-intro">{{intro}}</div>
+    </header>
+{{content}}
+    <nav class="prevnext" aria-label="Pages">{{prevnext}}</nav>
+  </main>
+
+  <footer class="footer">
+    <img src="assets/logo/svg/icon-blanc.svg" alt="" width="22" height="22">
+    <p>ICONIC Beverages brand guidelines. The ICONIC name, ring and wordmark belong to ICONIC Beverages.</p>
+    <p>Designed by Good Apples.</p>
+  </footer>
+</div>
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>
