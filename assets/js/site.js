@@ -57,6 +57,16 @@
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) go(); }); }).observe(v);
   });
 
+  // diagrams that animate in once, when they scroll into view
+  document.querySelectorAll('[data-animate]').forEach(function (el) {
+    if (!('IntersectionObserver' in window)) return;
+    el.classList.add('armed');
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { el.classList.add('in-view'); io.disconnect(); } });
+    }, { threshold: 0.45 });
+    io.observe(el);
+  });
+
   // logo variant selector
   document.querySelectorAll('[data-selector]').forEach(function (sel) {
     var stage = sel.querySelector('.stage'), img = stage.querySelector('img');
