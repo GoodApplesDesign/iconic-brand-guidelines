@@ -67,18 +67,32 @@
     io.observe(el);
   });
 
-  // logo variant selector
+  // logo variant selector: pick a background; on Blanc, a switch in the card swaps the Graphite and Gold rings
   document.querySelectorAll('[data-selector]').forEach(function (sel) {
     var stage = sel.querySelector('.stage'), img = stage.querySelector('img');
-    var res = sel.querySelector('.result');
+    var res = sel.querySelector('.result'), sw = stage.querySelector('.ring-switch');
+    var chip = null, alt = 0;
+    function show() {
+      var k = alt && chip.dataset.altLogo ? 'alt' : '';
+      var logo = chip.dataset[k ? 'altLogo' : 'logo'], name = chip.dataset[k ? 'altName' : 'name'], note = chip.dataset[k ? 'altNote' : 'note'];
+      img.style.opacity = 0;
+      setTimeout(function () { img.src = logo; img.alt = name; img.style.opacity = 1; }, 180);
+      res.innerHTML = '<strong>' + name + '</strong>' + note;
+      if (sw) {
+        sw.hidden = !chip.dataset.altLogo;
+        sw.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.i === alt ? 'true' : 'false'); });
+      }
+    }
     sel.querySelectorAll('.chip').forEach(function (c) {
       c.addEventListener('click', function () {
         sel.querySelectorAll('.chip').forEach(function (o) { o.setAttribute('aria-pressed', o === c ? 'true' : 'false'); });
         stage.style.background = c.dataset.bg;
-        img.style.opacity = 0;
-        setTimeout(function () { img.src = c.dataset.logo; img.alt = c.dataset.name; img.style.opacity = 1; }, 180);
-        res.innerHTML = '<strong>' + c.dataset.name + '</strong>' + c.dataset.note;
+        stage.classList.toggle('is-light', c.hasAttribute('data-light'));
+        chip = c; alt = 0; show();
       });
+    });
+    if (sw) sw.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () { if (+b.dataset.i !== alt) { alt = +b.dataset.i; show(); } });
     });
   });
 })();

@@ -24,6 +24,7 @@ VARIANTS = {
     'silver':      ('silver', BLANC),
     'bronze':      ('bronze', BLANC),
     'graphite':    ('graphite', NOIR),
+    'gold-noir':   ('gold', NOIR),  # gold ring, Noir wordmark: the gold logo for Blanc and other light backgrounds
     'gold-lite':   ('#DDC68C', BLANC),
     'bronze-lite': ('#B4885A', BLANC),
     'blanc':       (BLANC, BLANC),

@@ -173,6 +173,12 @@ h3 { font-size: 18px; font-weight: 400; line-height: 1.35; margin: 0; color: var
 .selector .stage { aspect-ratio: auto; min-height: 0; box-shadow: inset 0 0 0 1px var(--line); transition: background-color .35s; }
 .selector .stage img { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 66%; width: auto; max-width: 70%; object-fit: contain; transition: opacity .25s; }
 .selector .controls { display: flex; flex-direction: column; gap: 8px; }
+/* ring switch: appears in the card on backgrounds with a second metal (Blanc: Graphite or Gold) */
+.ring-switch { position: absolute; left: 16px; top: 16px; z-index: 3; display: inline-flex; gap: 2px; padding: 3px; border: 1px solid rgba(17, 17, 17, .14); border-radius: 40px; background: rgba(237, 237, 234, .7); }
+.ring-switch[hidden] { display: none; }
+.ring-switch button { white-space: nowrap; padding: 6px 14px; border: 0; border-radius: 40px; background: transparent; color: rgba(17, 17, 17, .55); font: inherit; font-size: 13px; cursor: pointer; transition: background-color .2s, color .2s; }
+.ring-switch button:hover { color: #111111; }
+.ring-switch button[aria-pressed="true"] { background: rgba(17, 17, 17, .08); color: #111111; }
 .chip { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; background: transparent; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
 .chip:hover { border-color: rgba(237, 237, 234, .35); }
 .chip[aria-pressed="true"] { border-color: var(--gold-lite); }
@@ -314,6 +320,7 @@ th { font-weight: 400; font-size: 13px; color: var(--faint); }
   .selector { grid-template-columns: 1fr; }
   .selector .stage { aspect-ratio: 16 / 10; }
   .selector .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chip span { white-space: nowrap; }
   .selector .result { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
@@ -322,6 +329,10 @@ th { font-weight: 400; font-size: 13px; color: var(--faint); }
   .g4, .weights { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .card.wide .panel { aspect-ratio: 16 / 11; }
   .g5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .selector .controls { grid-template-columns: 1fr; }
+  .selector .stage { aspect-ratio: 4 / 3; }
+  .ring-switch { left: 10px; top: 10px; }
+  .ring-switch button { padding: 5px 11px; font-size: 12px; }
   .span2 { grid-column: auto; }
   .panel > img.logo { width: 58%; }
   .panel > img.logo.sm { width: 40%; }
