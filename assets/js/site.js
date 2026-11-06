@@ -71,13 +71,29 @@
   document.querySelectorAll('[data-selector]').forEach(function (sel) {
     var stage = sel.querySelector('.stage'), img = stage.querySelector('img');
     var res = sel.querySelector('.result'), sw = stage.querySelector('.ring-switch');
-    var chip = null, alt = 0;
-    function show() {
+    var chips = [].slice.call(sel.querySelectorAll('.chip'));
+    var chip = chips[0], alt = 0;
+    // every caption is stacked in the same spot, so the box (and the logo card beside it) is always as tall as the
+    // longest one and nothing resizes when you switch
+    res.innerHTML = '';
+    var notes = {};
+    chips.forEach(function (c, i) {
+      [['', c.dataset.name, c.dataset.note], ['alt', c.dataset.altName, c.dataset.altNote]].forEach(function (v) {
+        if (!v[1]) return;
+        var d = document.createElement('div');
+        d.className = 'note'; d.innerHTML = '<strong>' + v[1] + '</strong>' + v[2];
+        res.appendChild(d); notes[i + v[0]] = d;
+      });
+    });
+    function show(instant) {
       var k = alt && chip.dataset.altLogo ? 'alt' : '';
-      var logo = chip.dataset[k ? 'altLogo' : 'logo'], name = chip.dataset[k ? 'altName' : 'name'], note = chip.dataset[k ? 'altNote' : 'note'];
-      img.style.opacity = 0;
-      setTimeout(function () { img.src = logo; img.alt = name; img.style.opacity = 1; }, 180);
-      res.innerHTML = '<strong>' + name + '</strong>' + note;
+      var logo = chip.dataset[k ? 'altLogo' : 'logo'], name = chip.dataset[k ? 'altName' : 'name'];
+      if (!instant) {
+        img.style.opacity = 0;
+        setTimeout(function () { img.src = logo; img.alt = name; img.style.opacity = 1; }, 180);
+      }
+      var on = notes[chips.indexOf(chip) + k];
+      Object.keys(notes).forEach(function (key) { notes[key].classList.toggle('on', notes[key] === on); });
       if (sw) {
         sw.hidden = !chip.dataset.altLogo;
         sw.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.i === alt ? 'true' : 'false'); });
@@ -91,6 +107,7 @@
         chip = c; alt = 0; show();
       });
     });
+    show(true);
     if (sw) sw.querySelectorAll('button').forEach(function (b) {
       b.addEventListener('click', function () { if (+b.dataset.i !== alt) { alt = +b.dataset.i; show(); } });
     });
