@@ -1,0 +1,194 @@
+/* PDF version of the ICONIC guidelines (built by make_pdf.py). A4 landscape, on the grid of the Identity Evolution deck
+   (Logo Development-v3.ai): margins at 5.9% of the width, the label's cap top at 4.5% of the height, the rule at 91.5%.
+   Brand tokens (colours, metal gradients) come from site.css. */
+@page { size: 297mm 210mm; margin: 0; }
+*, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+:root {
+  --m: 17.6mm;            /* side margins */
+  --top: 24mm;            /* content starts under the label */
+  --bottom: 26mm;         /* and stops above the rule */
+  --rule: #91845E;        /* the deck's gold rule */
+  --gap: 4mm;
+  --line: rgba(237, 237, 234, .14);
+  --panel: #1A1A1A;
+}
+
+html, body { margin: 0; padding: 0; background: var(--noir); }
+body { color: var(--ink); font: 300 9.5pt/1.55 Aileron, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+img, svg { display: block; max-width: 100%; }
+svg.sm { display: inline-block; overflow: visible; }
+p { margin: 0 0 .85em; text-wrap: pretty; }
+p:last-child { margin-bottom: 0; }
+a { color: inherit; text-decoration: none; }
+strong { font-weight: 600; }
+.label { font-weight: 400; }
+.link { color: var(--gold-lite); font-weight: 400; }
+
+/* ---------- page frame ---------- */
+.page { position: relative; width: 297mm; height: 210mm; overflow: hidden; background: var(--noir); break-after: page; }
+.page:last-of-type { break-after: auto; }
+.pl { position: absolute; left: var(--m); top: 9.4mm; font-size: 11.5pt; }
+.pl svg.sm, .foot svg.sm { display: block; }
+.body { position: absolute; left: var(--m); right: var(--m); top: var(--top); bottom: var(--bottom); }
+.foot { position: absolute; left: var(--m); right: var(--m); top: 192.2mm; border-top: .4pt solid var(--rule); display: flex; justify-content: space-between; align-items: flex-start; padding-top: 8mm; font-size: 5.2pt; color: var(--muted); }
+.foot .r { display: flex; align-items: flex-start; gap: 2.6mm; }
+.foot .no { font: 400 6pt/1 Aileron, sans-serif; margin-top: -.1mm; color: var(--ink); }
+
+/* ---------- layouts ---------- */
+.split { display: grid; grid-template-columns: 80mm minmax(0, 1fr); column-gap: 14mm; height: 100%; }
+.stack { display: flex; flex-direction: column; gap: 8mm; height: 100%; }
+.stack > .text { max-width: 128mm; }
+.stack > .text.cols { max-width: none; display: grid; grid-template-columns: 80mm minmax(0, 1fr); column-gap: 14mm; align-items: start; }
+.vis { min-width: 0; }
+.text p { color: var(--muted); }
+.text p.lead { font-size: 13pt; line-height: 1.42; color: var(--ink); margin-bottom: .9em; }
+.stack .text p.lead { margin-bottom: 0; }
+h3 { font: 400 10.5pt/1.3 Aileron, sans-serif; color: var(--ink); margin: 7mm 0 2mm; }
+h3:first-child { margin-top: 0; }
+.vis-note { color: var(--muted); max-width: 120mm; margin-bottom: 5mm; }
+.row-h { font-size: 8.5pt; font-weight: 400; color: var(--muted); margin: 0 0 2.4mm; }
+.grid + .row-h { margin-top: 7mm; }
+
+/* ---------- cover and back ---------- */
+.cover .mark { position: absolute; right: var(--m); top: 12mm; width: 40mm; }
+.cover-title { position: absolute; left: var(--m); bottom: 26mm; }
+.cover-title .t { font-size: 25pt; line-height: 1.3; }
+.cover-title .sub { margin-top: 5mm; font-size: 8.5pt; color: var(--muted); }
+.back .mark { position: absolute; left: 50%; top: 50%; width: 56mm; transform: translate(-50%, -54%); }
+.back-foot { position: absolute; left: var(--m); right: var(--m); top: 192.2mm; border-top: .4pt solid var(--rule); display: flex; justify-content: space-between; padding-top: 7mm; font-size: 7pt; color: var(--muted); }
+
+/* ---------- section dividers ---------- */
+.divider .title { font-size: 40pt; line-height: 1; margin-bottom: 12mm; }
+.panel.fill { aspect-ratio: auto; height: 100%; }
+.panel.fill > img.logo.hero { width: 44%; max-width: none; }
+
+/* ---------- contents ---------- */
+.toc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 8mm; align-items: start; }
+.toc-sec { margin-bottom: 9mm; }
+.toc-h { display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; padding-bottom: 2.6mm; border-bottom: .4pt solid var(--rule); }
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc li a { display: flex; justify-content: space-between; gap: 3mm; padding: 1.9mm 0; border-bottom: .3mm solid var(--line); font-size: 8.5pt; }
+.toc .n { font: 400 8pt Aileron, sans-serif; color: var(--muted); }
+
+/* ---------- panels (as on the site) ---------- */
+.grid { display: grid; gap: 6mm var(--gap); }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.panel { position: relative; background: var(--panel); border-radius: 1mm; overflow: hidden; display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 10; }
+.panel.tall { aspect-ratio: 4 / 5; }
+.panel.taller { aspect-ratio: 2 / 3; }
+.panel.way { aspect-ratio: 10 / 11; }
+.panel.r169 { aspect-ratio: 16 / 9; }
+.panel.pad { aspect-ratio: auto; height: 64mm; padding: 7mm; justify-content: flex-start; }
+.panel > img.logo { width: 46%; max-height: 70%; object-fit: contain; }
+.panel > img.logo.sm { width: 28%; }
+.panel > img.logo.lg { width: 58%; }
+.panel > img.logo.w64 { width: 62%; }
+.panel > img.cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.panel .over { position: relative; z-index: 2; }
+.panel img.over { position: absolute; }
+.bg-noir { background: var(--noir); box-shadow: inset 0 0 0 .3mm var(--line); }
+.bg-black { background: #000; }
+.bg-graphite { background: var(--graphite); }
+.bg-blanc { background: var(--blanc); color: var(--noir); }
+.bg-brown { background: var(--brown); }
+.bg-olive { background: var(--olive); }
+.bg-panel { background: var(--panel); }
+.cap { margin-top: 2.4mm; }
+.cap .label { display: block; font-size: 8.5pt; line-height: 1.35; color: var(--ink); }
+.cap p { font-size: 7.6pt; line-height: 1.45; color: var(--muted); margin: .7mm 0 0; }
+.tag { position: absolute; left: 3.5mm; top: 3.5mm; z-index: 3; font: 400 7pt Aileron, sans-serif; color: var(--muted); }
+
+/* ---------- diagrams ---------- */
+.diagram { width: 100%; height: 100%; }
+.diagram text { font: 400 13px Aileron, sans-serif; fill: var(--muted); }
+.panel.anat { aspect-ratio: 16 / 10; }
+.anatomy { width: 100%; }
+.anatomy .anno path { fill: none; stroke: rgba(237, 237, 234, .4); stroke-width: .7; }
+.anatomy .anno circle { fill: var(--gold-lite); }
+.anatomy .anno text { font: 400 13px Aileron, sans-serif; fill: var(--muted); }
+
+/* ---------- lockup table ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 8.5pt; line-height: 1.4; }
+th, td { text-align: left; padding: 2.8mm 4mm 2.8mm 0; border-bottom: .3mm solid var(--line); vertical-align: middle; }
+th { font-weight: 400; font-size: 7.6pt; color: var(--faint); }
+td:first-child, th:first-child { width: 34mm; }
+.lockups td { padding-top: 3.4mm; padding-bottom: 3.4mm; }
+.lockups td:nth-child(3) { color: var(--ink); font-weight: 400; }
+.lockups td:nth-child(2), .lockups td:nth-child(4) { color: var(--muted); }
+.panel.thumb { width: 30mm; aspect-ratio: 16 / 10; }
+
+/* ---------- do / don't ---------- */
+.rule { display: flex; flex-direction: column; }
+.rule .panel { aspect-ratio: 4 / 3; }
+.rule .verdict { display: flex; gap: 1.4mm; align-items: baseline; margin-top: 2.4mm; font-size: 7.6pt; line-height: 1.4; color: var(--muted); }
+.rule .verdict b { font-weight: 400; color: var(--ink); flex: none; }
+.rule.dont .verdict b::before { content: "\2715\00a0"; color: #E5484D; }
+.dont .panel img { opacity: .95; }
+.rule.dont .panel::after { content: ""; position: absolute; inset: 0; z-index: 6; background: linear-gradient(to top right, transparent calc(50% - .2mm), #E5484D calc(50% - .1mm), #E5484D calc(50% + .1mm), transparent calc(50% + .2mm)); }
+.rule .frame { position: relative; display: flex; align-items: center; justify-content: center; background: var(--graphite); }
+.rule .frame img { min-width: 0; max-width: 100%; flex: none; }
+
+/* ---------- swatches ---------- */
+.swatch { border-radius: 1mm; overflow: hidden; background: var(--panel); display: flex; flex-direction: column; }
+.swatch .chipblock { aspect-ratio: 4 / 3; padding: 3.5mm; display: flex; flex-direction: column; justify-content: flex-end; }
+.swatch.tall .chipblock { aspect-ratio: 4 / 5; }
+.swatch .name { font-size: 10pt; font-weight: 400; }
+.swatch .role { font-size: 7.4pt; opacity: .7; }
+.vals { list-style: none; margin: 0; padding: 2.6mm 3.5mm 3.2mm; font-size: 7.6pt; }
+.vals li { display: flex; justify-content: space-between; gap: 3mm; padding: .9mm 0; border-bottom: .3mm solid var(--line); }
+.vals li:last-child { border-bottom: 0; }
+.vals .k { color: var(--faint); }
+
+/* ---------- metals ---------- */
+.metal + .metal { margin-top: 6mm; }
+.stops { height: 10mm; border-radius: 1mm; }
+.metal .cap { margin-top: 2mm; }
+.stop-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1.6mm; margin-top: 2mm; font-size: 6.8pt; line-height: 1.35; }
+.stop-row div { display: flex; flex-direction: column; gap: .5mm; }
+.stop-row i { display: block; height: 3.2mm; border-radius: .5mm; }
+.stop-row span { color: var(--muted); }
+.spec { list-style: none; padding: 0; margin: 5mm 0 0; }
+.spec li { display: flex; justify-content: space-between; gap: 4mm; padding: 2.2mm 0; border-bottom: .3mm solid var(--line); font-size: 8pt; }
+.spec li span:first-child { color: var(--muted); }
+.spec li span:last-child { text-align: right; }
+.ratio { display: flex; height: 64mm; border-radius: 1mm; overflow: hidden; }
+.ratio > div { display: flex; align-items: flex-end; padding: 2.5mm 3mm; font-size: 7.6pt; font-weight: 400; }
+
+/* ---------- type specimens ---------- */
+.specimen-panel { aspect-ratio: auto; height: 62mm; justify-content: flex-start; align-items: flex-end; padding: 7mm; }
+.specimen { font-size: 80pt; line-height: 1; }
+.glyphs { font-size: 12.5pt; line-height: 1.6; }
+.aileron-hero { font-size: 80pt; font-weight: 300; line-height: 1; letter-spacing: -.01em; }
+.panel .label { font-size: 7.6pt; color: var(--muted); }
+.weights { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+.weights > div { padding: 5mm; background: var(--panel); border-radius: 1mm; }
+.weights .w { font-size: 26pt; line-height: 1.1; margin-bottom: 2mm; }
+.weights .label { display: block; font-size: 8.5pt; }
+.weights p { font-size: 7.4pt; color: var(--muted); margin-top: 1mm; }
+.scale .row { display: grid; grid-template-columns: 30mm minmax(0, 1fr) 50mm; gap: 6mm; align-items: baseline; padding: 4mm 0; border-bottom: .3mm solid var(--line); }
+.scale .row:first-child { border-top: .3mm solid var(--line); }
+.scale .row > .label { font-size: 8pt; color: var(--muted); }
+.scale .meta { font-size: 7.2pt; color: var(--muted); line-height: 1.5; }
+.t-display { font-size: 30pt; line-height: 1.1; }
+.t-heading { font-size: 12pt; line-height: 1.2; }
+.t-sub { font-size: 11pt; font-weight: 400; line-height: 1.4; }
+.t-body { font-size: 9pt; line-height: 1.6; max-width: 120mm; }
+.t-label { font-size: 8pt; font-weight: 400; }
+.t-caption { font-size: 7.5pt; color: var(--muted); }
+.pillar { background: var(--panel); border-radius: 1mm; padding: 6mm 5mm; min-height: 62mm; }
+.pillar .label { display: block; font-size: 9pt; color: var(--ink); }
+.pillar p { margin-top: 2.5mm; font-size: 8.2pt; line-height: 1.5; color: var(--muted); }
+
+/* ---------- downloads ---------- */
+.dl-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8mm; align-items: start; }
+.dl-group { font-size: 9pt; margin: 0 0 2.4mm; }
+.dl + .dl-group { margin-top: 6mm; }
+.dl { list-style: none; margin: 0; padding: 0; border-top: .4pt solid var(--rule); }
+.dl li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4mm; align-items: center; padding: 2.4mm 0; border-bottom: .3mm solid var(--line); }
+.dl .what { font-size: 8.8pt; font-weight: 400; }
+.dl .what small { display: block; font-size: 7.2pt; font-weight: 300; color: var(--muted); margin-top: .3mm; }
+.dl .link { font-size: 7.6pt; }

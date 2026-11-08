@@ -22,3 +22,7 @@ Needs `pip3 install --user fonttools uharfbuzz` and Sugar Magic Serif installed 
 - `python3 _build/make_logos.py`: rebuilds every colourway in `assets/logo/svg/` from the masters in `_build/logo-src/` (exported from *Logo Development-v3.ai*).
 - `python3 _build/make_aura.py`: renders the animated aura loop (`assets/video/aura-gold.mp4` and its poster). Needs Chrome and ffmpeg. `PREVIEW=1` writes four still frames only.
 - `python3 _build/make_downloads.py`: rebuilds the PNGs, zip packs, ASE swatches, CSS tokens and Aileron pack in `assets/downloads/`. Needs Google Chrome.
+
+## PDF version
+- `python3 _build/make_pdf.py`: builds `assets/downloads/ICONIC-Brand-Guidelines.pdf` (A4 landscape) from `_build/src/print.html` and `print.css`. Needs Google Chrome.
+- The PDF has its own copy of the text, so when you change copy in `_build/src/pages/`, change it in `print.html` too, then rebuild.
