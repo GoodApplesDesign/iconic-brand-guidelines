@@ -57,6 +57,37 @@
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) go(); }); }).observe(v);
   });
 
+  // animated aura: a Dark | Light switch crossfades between the two loops. Both play all the time, in step, so the
+  // logo and lights carry on where they were and only the background changes. If they've drifted apart, the incoming
+  // one is lined up first (where the server allows seeking).
+  document.querySelectorAll('[data-aura]').forEach(function (box) {
+    var vids = {}, mode = 'dark', pill = box.querySelector('.dl-pill');
+    var btns = box.querySelectorAll('.mode-switch button');
+    box.querySelectorAll('video[data-mode]').forEach(function (v) { vids[v.dataset.mode] = v; });
+    var canSeek = function (v, t) { for (var i = 0; i < v.seekable.length; i++) if (t >= v.seekable.start(i) && t <= v.seekable.end(i)) return true; return false; };
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var to = b.dataset.mode;
+        if (to === mode) return;
+        var from = vids[mode], next = vids[to], done = false;
+        mode = to;
+        btns.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+        box.classList.toggle('is-light', to === 'light');
+        pill.href = pill.dataset[to];
+        var swap = function () {
+          if (done || mode !== to) return;
+          done = true;
+          next.classList.remove('off'); from.classList.add('off');
+        };
+        if (Math.abs(next.currentTime - from.currentTime) > 0.05 && canSeek(next, from.currentTime)) {
+          next.addEventListener('seeked', swap, { once: true });
+          setTimeout(swap, 300);
+          next.currentTime = from.currentTime;
+        } else swap();
+      });
+    });
+  });
+
   // diagrams that animate in once, when they scroll into view
   document.querySelectorAll('[data-animate]').forEach(function (el) {
     if (!('IntersectionObserver' in window)) return;

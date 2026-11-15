@@ -20,7 +20,8 @@ Needs `pip3 install --user fonttools uharfbuzz` and Sugar Magic Serif installed 
 
 ## Logo files and downloads
 - `python3 _build/make_logos.py`: rebuilds every colourway in `assets/logo/svg/` from the masters in `_build/logo-src/` (exported from *Logo Development-v3.ai*).
-- `python3 _build/make_aura.py`: renders the animated aura loop (`assets/video/aura-gold.mp4` and its poster). Needs Chrome and ffmpeg. `PREVIEW=1` writes four still frames only.
+- `python3 _build/make_aura.py`: renders the animated aura loop (`assets/video/aura-gold.mp4` and its poster). Needs Chrome and ffmpeg. `PREVIEW=8` writes eight still frames only.
+- `MODE=light python3 _build/make_aura.py`: the light version, gold on Blanc with a Noir wordmark (`assets/video/aura-gold-light.mp4` and its poster).
 - `python3 _build/make_downloads.py`: rebuilds the PNGs, zip packs, ASE swatches, CSS tokens and Aileron pack in `assets/downloads/`. Needs Google Chrome.
 
 ## PDF version

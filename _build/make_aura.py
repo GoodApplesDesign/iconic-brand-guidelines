@@ -10,8 +10,13 @@ fog round the ring), a thin sharp glisten hugging the ring's outer edge at each 
 metal only), a small, faint four-point twinkle that flashes once per light per loop, and a bloom off the brightest metal and the glistens, all scaled by each light's strength. The logo never rotates: it only
 pushes in and floats very slightly. Fine film grain keeps it filmic and stops the dark gradients banding.
 
+Light mode (MODE=light): the same gold animation on Blanc, with the Noir wordmark (the gold-noir logo). Light can't
+brighten a pale background, so off the metal the glow, twinkle and bloom show as warm gold colour instead; on the metal
+everything is as in the dark version.
+
 Run: python3 _build/make_aura.py   (needs Google Chrome and ffmpeg; PREVIEW=8 writes eight evenly spaced stills only)
 Writes assets/video/aura-gold.mp4 (1920x1080, 30 fps) and assets/video/aura-gold-poster.jpg.
+MODE=light python3 _build/make_aura.py writes assets/video/aura-gold-light.mp4 and aura-gold-light-poster.jpg.
 """
 import os, re, subprocess, tempfile
 import numpy as np
@@ -23,6 +28,9 @@ OUT = os.path.join(ROOT, 'assets', 'video')
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 W, H, FPS, SECONDS = 1920, 1080, 30, 10
 NOIR = np.array([17, 17, 17], np.float32) / 255
+BLANC = np.array([237, 237, 234], np.float32) / 255
+LIGHT = os.environ.get('MODE', 'dark') == 'light'
+NAME = 'aura-gold-light' if LIGHT else 'aura-gold'
 WARM, AMBER = '#F0C773', '#B07A22'
 
 # the logo's geometry, in its own units (primary-stack viewBox 264.638 x 230.637)
@@ -34,6 +42,9 @@ STOPS = [(0, '#6A4910'), (.18, '#B3882F'), (.36, '#E6C674'), (.46, '#FAEDC2'), (
          (1, '#56390C')]
 FACET = 1.0                 # px: width of the hairline bevel along each edge of the ring
 GLOW_CORE, GLOW_TAIL = 0.75, 2.6  # strength of the tight halo at the lit metal, and of its long faint tail
+# light mode: the warm gold the Blanc takes on round the lit metal, and how strongly (halo, tail, bloom, twinkle)
+TINT_CORE, TINT_TAIL, TINT_BLOOM, TINT_TWINKLE = '#C99A3C', '#D9B66E', '#D2A54B', '#B98A2E'
+TINT_K = (1.3, 2.1, 0.45, 0.9)
 
 
 def rgb(h):
@@ -126,8 +137,9 @@ def wrap(v):
 
 
 def main():
-    svg = open(os.path.join(ROOT, 'assets', 'logo', 'svg', 'primary-stack-gold.svg'), encoding='utf-8').read()
-    ring_im, (cx, cy) = render_layer(re.sub(r'fill="#EDEDEA"', 'fill="none"', svg))
+    logo = 'primary-stack-gold-noir.svg' if LIGHT else 'primary-stack-gold.svg'
+    svg = open(os.path.join(ROOT, 'assets', 'logo', 'svg', logo), encoding='utf-8').read()
+    ring_im, (cx, cy) = render_layer(re.sub(r'fill="#(EDEDEA|111111)"', 'fill="none"', svg))
     mark_im, _ = render_layer(re.sub(r'fill="url\(#[^)]+\)"', 'fill="none"', svg))
     R = RING_R * SCALE
     (ox, oy, ro), (ix, iy, ri) = ring_circles(np.asarray(ring_im, np.float32)[..., 3] / 255, 2, cx, cy, R)
@@ -162,7 +174,7 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     n = FPS * SECONDS
     preview = int(os.environ.get('PREVIEW', 0))
-    out = os.path.join(OUT, 'aura-gold.mp4')
+    out = os.path.join(OUT, NAME + '.mp4')
     ff = None if preview else subprocess.Popen(
         ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS),
          '-i', '-', '-vf', 'scale=out_color_matrix=bt709:out_range=tv', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17',
@@ -232,8 +244,12 @@ def main():
         core = blur(src, 2) * 0.55 + blur(src, 6) * 0.42
         tail = blur(src, 16) * 0.38 + blur(src, 42) * 0.3 + blur(src, 100) * 0.22
         up = lambda v: np.asarray(Image.fromarray(v.astype(np.float32)).resize((W, H), Image.BICUBIC), np.float32)[..., None]
-        glow_l = up(core) * rgb('#F6D58E') * GLOW_CORE + up(tail) * rgb('#C88E35') * GLOW_TAIL
-        frame = 1 - (1 - NOIR) * np.exp(-glow_l)
+        if LIGHT:  # on Blanc the glow can't brighten the background, so it warms it towards gold instead
+            frame = BLANC + (rgb(TINT_TAIL) - BLANC) * (1 - np.exp(-up(tail) * TINT_K[1]))
+            frame = frame + (rgb(TINT_CORE) - frame) * (1 - np.exp(-up(core) * TINT_K[0]))
+        else:
+            glow_l = up(core) * rgb('#F6D58E') * GLOW_CORE + up(tail) * rgb('#C88E35') * GLOW_TAIL
+            frame = 1 - (1 - NOIR) * np.exp(-glow_l)
         frame = np.minimum(ring_rgb, 1) * ring_a + frame * (1 - ring_a)
 
         # the glisten: a thin, sharp specular streak hugging the ring's outer edge at each light, sliding with it,
@@ -269,7 +285,12 @@ def main():
                 sparkle += np.exp(-0.5 * (perp / 0.7) ** 2) * np.exp(-np.abs(along) / (ln_ * (0.4 + 0.6 * env))) * (0.65 if k_ < 2 else 0.25)
             tw[y0:y0 + 241, x0:x0 + 241] += sparkle * env * l_['power']
         frame = 1 - (1 - frame) * (1 - np.clip(glis, 0, 1)[..., None] * rgb('#FFF4DA'))
-        frame = 1 - (1 - frame) * (1 - np.clip(tw, 0, 1)[..., None] * rgb('#FFF8E8'))
+        if LIGHT:  # on the metal the twinkle flashes bright as usual; off it, its rays show in warm gold
+            on = ring_a[..., 0]
+            frame = 1 - (1 - frame) * (1 - np.clip(tw * on, 0, 1)[..., None] * rgb('#FFF8E8'))
+            frame = frame + (rgb(TINT_TWINKLE) - frame) * np.clip(tw * (1 - on) * TINT_K[3], 0, 1)[..., None]
+        else:
+            frame = 1 - (1 - frame) * (1 - np.clip(tw, 0, 1)[..., None] * rgb('#FFF8E8'))
         frame = mark_rgb * mark_a + frame * (1 - mark_a)
 
         # soft light: a bloom off the brightest gold and off each glisten (worked at half size)
@@ -278,18 +299,24 @@ def main():
         hl += (glis + tw * 0.5).reshape(H // 2, 2, W // 2, 2).mean((1, 3)) * 0.9
         bloom = blur(hl, 8) * 0.8 + blur(hl, 26) * 0.6 + blur(hl, 70) * 0.4
         light = np.asarray(Image.fromarray(bloom.astype(np.float32)).resize((W, H), Image.BICUBIC), np.float32)
-        light = np.clip(light, 0, 4)[..., None] * rgb('#FFE7B0') * 0.55
-        frame = 1 - (1 - frame) * np.exp(-light)  # soft, filmic highlight roll-off
+        if LIGHT:  # bloom brightens the metal only; round it, it warms the Blanc, and the Noir wordmark stays solid
+            lit_px = np.clip(light, 0, 4)[..., None]
+            frame = ring_a * (1 - (1 - frame) * np.exp(-lit_px * rgb('#FFE7B0') * 0.55)) + (1 - ring_a) * frame
+            off = (1 - ring_a) * (1 - mark_a)
+            frame = frame + (rgb(TINT_BLOOM) - frame) * (1 - np.exp(-lit_px * TINT_K[2])) * off
+        else:
+            light = np.clip(light, 0, 4)[..., None] * rgb('#FFE7B0') * 0.55
+            frame = 1 - (1 - frame) * np.exp(-light)  # soft, filmic highlight roll-off
 
         grain = grain_rng.normal(0, 1.1, (H, W, 1)).astype(np.float32)
         out_px = np.clip(frame * 255 + grain, 0, 255).astype(np.uint8)
         if ff:
             ff.stdin.write(out_px.tobytes())
         if f == 0 and ff:
-            Image.fromarray(out_px).save(os.path.join(OUT, 'aura-gold-poster.jpg'), quality=90)
+            Image.fromarray(out_px).save(os.path.join(OUT, NAME + '-poster.jpg'), quality=90)
         if preview:
             i = frames.index(f)
-            Image.fromarray(out_px).save(os.path.join(HERE, f'aura-frame-{i}.png'))
+            Image.fromarray(out_px).save(os.path.join(HERE, f'aura{"-light" if LIGHT else ""}-frame-{i}.png'))
             msg = (f't={t:.3f} top {np.rad2deg(top["phi"]):.0f}deg x{top["power"]:.2f}  '
                    f'bottom {np.rad2deg(bottom["phi"]):.0f}deg x{bottom["power"]:.2f}')
             if f == 0:  # the first frame's gold should be the static logo's (the hairline bevel aside)
