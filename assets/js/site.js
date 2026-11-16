@@ -61,7 +61,7 @@
   // logo and lights carry on where they were and only the background changes. If they've drifted apart, the incoming
   // one is lined up first (where the server allows seeking).
   document.querySelectorAll('[data-aura]').forEach(function (box) {
-    var vids = {}, mode = 'dark', pill = box.querySelector('.dl-pill');
+    var vids = {}, mode = 'dark';
     var btns = box.querySelectorAll('.mode-switch button');
     box.querySelectorAll('video[data-mode]').forEach(function (v) { vids[v.dataset.mode] = v; });
     var canSeek = function (v, t) { for (var i = 0; i < v.seekable.length; i++) if (t >= v.seekable.start(i) && t <= v.seekable.end(i)) return true; return false; };
@@ -73,7 +73,6 @@
         mode = to;
         btns.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
         box.classList.toggle('is-light', to === 'light');
-        pill.href = pill.dataset[to];
         var swap = function () {
           if (done || mode !== to) return;
           done = true;

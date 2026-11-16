@@ -17,6 +17,14 @@ everything is as in the dark version.
 Run: python3 _build/make_aura.py   (needs Google Chrome and ffmpeg; PREVIEW=8 writes eight evenly spaced stills only)
 Writes assets/video/aura-gold.mp4 (1920x1080, 30 fps) and assets/video/aura-gold-poster.jpg.
 MODE=light python3 _build/make_aura.py writes assets/video/aura-gold-light.mp4 and aura-gold-light-poster.jpg.
+
+Email GIF (GIF=1, with or without MODE=light): the same lights at 10 fps, cropped square round the logo (320 x 320,
+128 colours), without the push-in and float and without film grain (both change every pixel of the logo on every
+frame). That keeps it about 1-1.5 MB; 400 px at 15 fps was 2.3-3.5 MB. The flat background is exactly Noir or Blanc,
+so the GIF sits seamlessly on an email of that colour. Frames are kept in _build/gif/frames-<name>/, so REUSE=1 re-encodes without re-rendering.
+Writes _build/gif/aura-gold.gif or aura-gold-light.gif (a build cache; they ship inside the zip).
+PACK=1 python3 _build/make_aura.py renders nothing: it zips both MP4s and both GIFs into
+assets/downloads/ICONIC-animated-aura.zip.
 """
 import os, re, subprocess, tempfile
 import numpy as np
@@ -31,6 +39,8 @@ NOIR = np.array([17, 17, 17], np.float32) / 255
 BLANC = np.array([237, 237, 234], np.float32) / 255
 LIGHT = os.environ.get('MODE', 'dark') == 'light'
 NAME = 'aura-gold-light' if LIGHT else 'aura-gold'
+GIF = os.environ.get('GIF') == '1'
+GIF_CROP, GIF_SIZE, GIF_STEP, GIF_COLORS = (600, 180, 1320, 900), (320, 320), 3, 128  # square round the logo, 10 fps
 WARM, AMBER = '#F0C773', '#B07A22'
 
 # the logo's geometry, in its own units (primary-stack viewBox 264.638 x 230.637)
@@ -175,19 +185,28 @@ def main():
     n = FPS * SECONDS
     preview = int(os.environ.get('PREVIEW', 0))
     out = os.path.join(OUT, NAME + '.mp4')
-    ff = None if preview else subprocess.Popen(
+    gif_dir = os.path.join(HERE, 'gif', 'frames-' + NAME) if GIF and not preview else None
+    if gif_dir and os.environ.get('REUSE') == '1':
+        return encode_gif(gif_dir)
+    if gif_dir:
+        import shutil
+        shutil.rmtree(gif_dir, ignore_errors=True)
+        os.makedirs(gif_dir)
+    ff = None if preview or GIF else subprocess.Popen(
         ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS),
          '-i', '-', '-vf', 'scale=out_color_matrix=bt709:out_range=tv', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17',
          '-pix_fmt', 'yuv420p', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
          '-movflags', '+faststart', out], stdin=subprocess.PIPE)
     grain_rng = np.random.default_rng(7)
-    frames = [round(i * n / preview) for i in range(preview)] if preview else range(n)
+    frames = [round(i * n / preview) for i in range(preview)] if preview else range(0, n, GIF_STEP) if GIF else range(n)
     for f in frames:
         t = f / n  # 0..1, loops seamlessly
         tau = 2 * np.pi * t
         # the logo: a slow, slight push-in and float, never a rotation
         s = 1 + 0.03 * (0.5 - 0.5 * np.cos(tau))
         ty = -5 * np.sin(tau)
+        if GIF:  # the email GIF holds the logo still, so only the lit metal changes from frame to frame
+            s, ty = 1.0, 0.0
         ccy = cy + ty
 
         # the two lights start as the static logo: at their resting spots, square on, at full strength
@@ -309,7 +328,10 @@ def main():
             frame = 1 - (1 - frame) * np.exp(-light)  # soft, filmic highlight roll-off
 
         grain = grain_rng.normal(0, 1.1, (H, W, 1)).astype(np.float32)
-        out_px = np.clip(frame * 255 + grain, 0, 255).astype(np.uint8)
+        out_px = np.clip(frame * 255 + (0.5 if GIF else grain), 0, 255).astype(np.uint8)  # GIF: rounded, no grain
+        if gif_dir:
+            Image.fromarray(out_px).crop(GIF_CROP).resize(GIF_SIZE, Image.LANCZOS).save(
+                os.path.join(gif_dir, f'f{f // GIF_STEP:04d}.png'))
         if ff:
             ff.stdin.write(out_px.tobytes())
         if f == 0 and ff:
@@ -328,7 +350,48 @@ def main():
         ff.stdin.close()
         ff.wait()
         print('wrote', out, os.path.getsize(out) // 1024, 'KB')
+    if gif_dir:
+        encode_gif(gif_dir)
+
+
+def encode_gif(frames_dir):
+    """One palette for the whole loop, ordered (Bayer) dither so flat areas stay still from frame to frame."""
+    gif = os.path.join(HERE, 'gif', NAME + '.gif')
+    pal = os.path.join(frames_dir, 'palette.png')
+    inp = ['-framerate', str(FPS // GIF_STEP), '-i', os.path.join(frames_dir, 'f%04d.png')]
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *inp, '-vf', f'palettegen=max_colors={GIF_COLORS}:stats_mode=full', pal],
+                   check=True)
+    # put the exact background colour in the palette, so the flat background has no dither pattern
+    p = np.asarray(Image.open(pal).convert('RGB')).copy()
+    flat = p.reshape(-1, 3).astype(int)
+    bg = np.round((BLANC if LIGHT else NOIR) * 255).astype(int)
+    flat[np.argmin(((flat - bg) ** 2).sum(1))] = bg
+    Image.fromarray(flat.reshape(p.shape).astype(np.uint8)).save(pal)
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *inp, '-i', pal, '-lavfi',
+                    'paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle', '-loop', '0', gif], check=True)
+    print('wrote', gif, os.path.getsize(gif) // 1024, 'KB')
+
+
+def pack():
+    """Zips every animated version (dark and light, MP4 and email GIF) into one download."""
+    import zipfile
+    files = [(os.path.join(OUT, 'aura-gold.mp4'), 'ICONIC-animated-aura-dark.mp4'),
+             (os.path.join(OUT, 'aura-gold-light.mp4'), 'ICONIC-animated-aura-light.mp4'),
+             (os.path.join(HERE, 'gif', 'aura-gold.gif'), 'ICONIC-animated-aura-dark-email.gif'),
+             (os.path.join(HERE, 'gif', 'aura-gold-light.gif'), 'ICONIC-animated-aura-light-email.gif')]
+    readme = ('ICONIC animated aura\n\n'
+              'Dark: gold on Noir. Light: gold on Blanc, with a Noir wordmark.\n\n'
+              'MP4: 1920 x 1080, 10-second seamless loop. For screens, video, events and presentations.\n'
+              'GIF: 320 x 320, the same lights at 10 fps, with the logo held still. For email newsletters and launches. '
+              'Outlook for Windows shows only the first frame, which is the static logo. For email signatures, use the '
+              'static logo PNG instead.\n')
+    zp = os.path.join(ROOT, 'assets', 'downloads', 'ICONIC-animated-aura.zip')
+    with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
+        for src, name in files:
+            z.write(src, name, compress_type=zipfile.ZIP_STORED)  # already compressed
+        z.writestr('Read me.txt', readme)
+    print('zipped', zp, os.path.getsize(zp) // 1024, 'KB')
 
 
 if __name__ == '__main__':
-    main()
+    pack() if os.environ.get('PACK') == '1' else main()
