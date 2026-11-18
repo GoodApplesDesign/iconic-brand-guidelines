@@ -3,6 +3,6 @@ __pycache__/
 # build caches: raw downloaded photos and rendered PNGs (the PNGs ship inside the zips)
 _build/img-src/
 _build/png/
-_build/aura-frame-*.png
-_build/aura-light-frame-*.png
+_build/aura*-frame-*.png
 _build/gif/
+_build/video/

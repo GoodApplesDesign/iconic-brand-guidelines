@@ -23,7 +23,13 @@ Email GIF (GIF=1, with or without MODE=light): the same lights at 10 fps, croppe
 frame). That keeps it about 1-1.5 MB; 400 px at 15 fps was 2.3-3.5 MB. The flat background is exactly Noir or Blanc,
 so the GIF sits seamlessly on an email of that colour. Frames are kept in _build/gif/frames-<name>/, so REUSE=1 re-encodes without re-rendering.
 Writes _build/gif/aura-gold.gif or aura-gold-light.gif (a build cache; they ship inside the zip).
-PACK=1 python3 _build/make_aura.py renders nothing: it zips both MP4s and both GIFs into
+White (BG=white): the light version on pure white (#FFFFFF) instead of Blanc, for white web pages and emails (ICONIC
+asked, 18 Nov 2026). Works for the MP4 and with GIF=1. The flat white has no grain, so it stays exactly #FFFFFF.
+Transparent (ALPHA=1, with or without MODE=light): the same loop with no background, as ProRes 4444 with alpha, for
+video editors. Each frame is rendered over black and over white and the difference gives the alpha, so the glow keeps
+its look: on the dark version it is light (a warm, semi-transparent glow), on the light version a warm gold tint.
+No grain. Writes _build/video/aura-gold-alpha.mov or aura-gold-light-alpha.mov.
+PACK=1 python3 _build/make_aura.py renders nothing: it zips every animated version into
 assets/downloads/ICONIC-animated-aura.zip.
 """
 import os, re, subprocess, tempfile
@@ -37,8 +43,14 @@ CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 W, H, FPS, SECONDS = 1920, 1080, 30, 10
 NOIR = np.array([17, 17, 17], np.float32) / 255
 BLANC = np.array([237, 237, 234], np.float32) / 255
-LIGHT = os.environ.get('MODE', 'dark') == 'light'
-NAME = 'aura-gold-light' if LIGHT else 'aura-gold'
+WHITE = os.environ.get('BG') == 'white'
+LIGHT = os.environ.get('MODE', 'dark') == 'light' or WHITE
+ALPHA = os.environ.get('ALPHA') == '1'
+NAME = 'aura-gold' + ('-white' if WHITE else '-light' if LIGHT else '') + ('-alpha' if ALPHA else '')
+BGC = np.ones(3, np.float32) if WHITE else BLANC if LIGHT else NOIR  # the background colour
+# transparent: every frame is worked out over black and over white at once (a leading axis of two)
+BGS = np.array([[0, 0, 0], [1, 1, 1]], np.float32)[:, None, None, :] if ALPHA else BGC
+CACHE = os.path.join(HERE, 'video')  # white MP4 and transparent MOVs: a build cache, they ship inside the zip
 GIF = os.environ.get('GIF') == '1'
 GIF_CROP, GIF_SIZE, GIF_STEP, GIF_COLORS = (600, 180, 1320, 900), (320, 320), 3, 128  # square round the logo, 10 fps
 WARM, AMBER = '#F0C773', '#B07A22'
@@ -184,7 +196,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     n = FPS * SECONDS
     preview = int(os.environ.get('PREVIEW', 0))
-    out = os.path.join(OUT, NAME + '.mp4')
+    out = os.path.join(CACHE if WHITE or ALPHA else OUT, NAME + ('.mov' if ALPHA else '.mp4'))
+    os.makedirs(os.path.dirname(out), exist_ok=True)
     gif_dir = os.path.join(HERE, 'gif', 'frames-' + NAME) if GIF and not preview else None
     if gif_dir and os.environ.get('REUSE') == '1':
         return encode_gif(gif_dir)
@@ -193,6 +206,10 @@ def main():
         shutil.rmtree(gif_dir, ignore_errors=True)
         os.makedirs(gif_dir)
     ff = None if preview or GIF else subprocess.Popen(
+        ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgba64le', '-s', f'{W}x{H}', '-r', str(FPS),
+         '-i', '-', '-c:v', 'prores_ks', '-profile:v', '4444', '-pix_fmt', 'yuva444p10le', '-alpha_bits', '16',
+         '-vendor', 'apl0', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', out]
+        if ALPHA else
         ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS),
          '-i', '-', '-vf', 'scale=out_color_matrix=bt709:out_range=tv', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17',
          '-pix_fmt', 'yuv420p', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
@@ -264,11 +281,11 @@ def main():
         tail = blur(src, 16) * 0.38 + blur(src, 42) * 0.3 + blur(src, 100) * 0.22
         up = lambda v: np.asarray(Image.fromarray(v.astype(np.float32)).resize((W, H), Image.BICUBIC), np.float32)[..., None]
         if LIGHT:  # on Blanc the glow can't brighten the background, so it warms it towards gold instead
-            frame = BLANC + (rgb(TINT_TAIL) - BLANC) * (1 - np.exp(-up(tail) * TINT_K[1]))
+            frame = BGS + (rgb(TINT_TAIL) - BGS) * (1 - np.exp(-up(tail) * TINT_K[1]))
             frame = frame + (rgb(TINT_CORE) - frame) * (1 - np.exp(-up(core) * TINT_K[0]))
         else:
             glow_l = up(core) * rgb('#F6D58E') * GLOW_CORE + up(tail) * rgb('#C88E35') * GLOW_TAIL
-            frame = 1 - (1 - NOIR) * np.exp(-glow_l)
+            frame = 1 - (1 - BGS) * np.exp(-glow_l)
         frame = np.minimum(ring_rgb, 1) * ring_a + frame * (1 - ring_a)
 
         # the glisten: a thin, sharp specular streak hugging the ring's outer edge at each light, sliding with it,
@@ -328,17 +345,30 @@ def main():
             frame = 1 - (1 - frame) * np.exp(-light)  # soft, filmic highlight roll-off
 
         grain = grain_rng.normal(0, 1.1, (H, W, 1)).astype(np.float32)
-        out_px = np.clip(frame * 255 + (0.5 if GIF else grain), 0, 255).astype(np.uint8)  # GIF: rounded, no grain
+        if ALPHA:  # over black and over white: alpha is 1 minus the difference, colour is the over-black result / alpha
+            f0, f1 = frame[0], frame[1]
+            a = np.clip(1 - (f1 - f0), 0, 1).max(-1, keepdims=True)  # the strongest channel, so warm light keeps its hue
+            c = np.where(a > 1e-4, np.clip(f0 / np.maximum(a, 1e-4), 0, 1), 0)
+            rgba = np.concatenate([c, a], -1)
+            if ff:
+                ff.stdin.write((rgba * 65535 + 0.5).astype('<u2').tobytes())
+            if preview:
+                Image.fromarray((rgba * 255 + 0.5).astype(np.uint8)).save(
+                    os.path.join(HERE, f'aura{NAME[9:]}-frame-{frames.index(f)}.png'))
+            continue
+        if WHITE:  # grain only where the frame isn't flat white, so the background stays exactly #FFFFFF
+            grain = grain * np.clip(np.abs(1 - frame).max(-1, keepdims=True) * 40, 0, 1)
+        out_px = np.clip(frame * 255 + (0.5 if GIF else grain + 0.5 if WHITE else grain), 0, 255).astype(np.uint8)  # GIF, white: rounded
         if gif_dir:
             Image.fromarray(out_px).crop(GIF_CROP).resize(GIF_SIZE, Image.LANCZOS).save(
                 os.path.join(gif_dir, f'f{f // GIF_STEP:04d}.png'))
         if ff:
             ff.stdin.write(out_px.tobytes())
-        if f == 0 and ff:
+        if f == 0 and ff and not WHITE:
             Image.fromarray(out_px).save(os.path.join(OUT, NAME + '-poster.jpg'), quality=90)
         if preview:
             i = frames.index(f)
-            Image.fromarray(out_px).save(os.path.join(HERE, f'aura{"-light" if LIGHT else ""}-frame-{i}.png'))
+            Image.fromarray(out_px).save(os.path.join(HERE, f'aura{NAME[9:]}-frame-{i}.png'))
             msg = (f't={t:.3f} top {np.rad2deg(top["phi"]):.0f}deg x{top["power"]:.2f}  '
                    f'bottom {np.rad2deg(bottom["phi"]):.0f}deg x{bottom["power"]:.2f}')
             if f == 0:  # the first frame's gold should be the static logo's (the hairline bevel aside)
@@ -356,41 +386,91 @@ def main():
 
 def encode_gif(frames_dir):
     """One palette for the whole loop, ordered (Bayer) dither so flat areas stay still from frame to frame."""
+    import glob
     gif = os.path.join(HERE, 'gif', NAME + '.gif')
-    pal = os.path.join(frames_dir, 'palette.png')
-    inp = ['-framerate', str(FPS // GIF_STEP), '-i', os.path.join(frames_dir, 'f%04d.png')]
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *inp, '-vf', f'palettegen=max_colors={GIF_COLORS}:stats_mode=full', pal],
-                   check=True)
-    # put the exact background colour in the palette, so the flat background has no dither pattern
-    p = np.asarray(Image.open(pal).convert('RGB')).copy()
-    flat = p.reshape(-1, 3).astype(int)
-    bg = np.round((BLANC if LIGHT else NOIR) * 255).astype(int)
-    flat[np.argmin(((flat - bg) ** 2).sum(1))] = bg
-    Image.fromarray(flat.reshape(p.shape).astype(np.uint8)).save(pal)
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *inp, '-i', pal, '-lavfi',
-                    'paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle', '-loop', '0', gif], check=True)
+    bg = np.round(BGC * 255).astype(int)
+    with tempfile.TemporaryDirectory() as tmp:
+        # the faintest edge of the glow reaches the tight crop, so fade it into the exact background over the outer
+        # few pixels: the GIF then sits seamlessly on an email of the same colour, with no visible box
+        files = sorted(glob.glob(os.path.join(frames_dir, 'f*.png')))
+        h, w = np.asarray(Image.open(files[0])).shape[:2]
+        yy, xx = np.mgrid[0:h, 0:w]
+        d = np.minimum(np.minimum(yy, h - 1 - yy), np.minimum(xx, w - 1 - xx)).astype(np.float32)
+        k = np.clip(d / 28, 0, 1)[..., None]
+        k = k * k * (3 - 2 * k)  # smoothstep
+        for i, f in enumerate(files):
+            a = np.asarray(Image.open(f).convert('RGB'), np.float32)
+            Image.fromarray(np.clip(bg + (a - bg) * k + 0.5, 0, 255).astype(np.uint8)).save(os.path.join(tmp, f'f{i:04d}.png'))
+        pal = os.path.join(tmp, 'palette.png')
+        inp = ['-framerate', str(FPS // GIF_STEP), '-i', os.path.join(tmp, 'f%04d.png')]
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *inp, '-vf', f'palettegen=max_colors={GIF_COLORS}:stats_mode=full', pal],
+                       check=True)
+        # put the exact background colour in the palette, so the flat background has no dither pattern
+        p = np.asarray(Image.open(pal).convert('RGB')).copy()
+        flat = p.reshape(-1, 3).astype(int)
+        flat[np.argmin(((flat - bg) ** 2).sum(1))] = bg
+        Image.fromarray(flat.reshape(p.shape).astype(np.uint8)).save(pal)
+        # dither to the palette, then put exact background back wherever the frame is exactly background (the dither
+        # pattern otherwise nudges some of those pixels onto neighbouring colours), then assemble with no further dither
+        dith = os.path.join(tmp, 'd')
+        os.makedirs(dith)
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *inp, '-i', pal, '-lavfi', 'paletteuse=dither=bayer:bayer_scale=4',
+                        '-fps_mode', 'passthrough', os.path.join(dith, 'f%04d.png')], check=True)
+        for i in range(len(files)):
+            src = np.asarray(Image.open(os.path.join(tmp, f'f{i:04d}.png')).convert('RGB')).astype(int)
+            out_f = os.path.join(dith, f'f{i + 1:04d}.png')
+            d_ = np.asarray(Image.open(out_f).convert('RGB')).copy()
+            d_[(np.abs(src - bg) <= 1).all(-1)] = bg
+            Image.fromarray(d_).save(out_f)
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS // GIF_STEP), '-start_number', '1',
+                        '-i', os.path.join(dith, 'f%04d.png'), '-i', pal, '-lavfi',
+                        'paletteuse=dither=none:diff_mode=rectangle', '-loop', '0', gif], check=True)
     print('wrote', gif, os.path.getsize(gif) // 1024, 'KB')
 
 
+RELEASE_TAG = 'aura-transparent-1'  # the transparent zip is too big for the repo, so it lives on a GitHub release
+RELEASE_URL = ('https://github.com/GoodApplesDesign/iconic-brand-guidelines/releases/download/'
+               f'{RELEASE_TAG}/ICONIC-animated-aura-transparent.zip')
+
+
 def pack():
-    """Zips every animated version (dark and light, MP4 and email GIF) into one download."""
+    """Zips the animated versions into two downloads: MP4s and email GIFs (in the repo, on the site), and the
+    transparent ProRes masters (about 300 MB, so they go on a GitHub release; upload with `gh release`)."""
     import zipfile
-    files = [(os.path.join(OUT, 'aura-gold.mp4'), 'ICONIC-animated-aura-dark.mp4'),
-             (os.path.join(OUT, 'aura-gold-light.mp4'), 'ICONIC-animated-aura-light.mp4'),
-             (os.path.join(HERE, 'gif', 'aura-gold.gif'), 'ICONIC-animated-aura-dark-email.gif'),
-             (os.path.join(HERE, 'gif', 'aura-gold-light.gif'), 'ICONIC-animated-aura-light-email.gif')]
-    readme = ('ICONIC animated aura\n\n'
-              'Dark: gold on Noir. Light: gold on Blanc, with a Noir wordmark.\n\n'
-              'MP4: 1920 x 1080, 10-second seamless loop. For screens, video, events and presentations.\n'
-              'GIF: 320 x 320, the same lights at 10 fps, with the logo held still. For email newsletters and launches. '
-              'Outlook for Windows shows only the first frame, which is the static logo. For email signatures, use the '
-              'static logo PNG instead.\n')
-    zp = os.path.join(ROOT, 'assets', 'downloads', 'ICONIC-animated-aura.zip')
-    with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
-        for src, name in files:
-            z.write(src, name, compress_type=zipfile.ZIP_STORED)  # already compressed
-        z.writestr('Read me.txt', readme)
-    print('zipped', zp, os.path.getsize(zp) // 1024, 'KB')
+    V, G = os.path.join(HERE, 'video'), os.path.join(HERE, 'gif')
+    main_files = [(os.path.join(OUT, 'aura-gold.mp4'), 'ICONIC-animated-aura-dark.mp4'),
+                  (os.path.join(OUT, 'aura-gold-light.mp4'), 'ICONIC-animated-aura-light.mp4'),
+                  (os.path.join(V, 'aura-gold-white.mp4'), 'ICONIC-animated-aura-white.mp4'),
+                  (os.path.join(G, 'aura-gold.gif'), 'ICONIC-animated-aura-dark-email.gif'),
+                  (os.path.join(G, 'aura-gold-light.gif'), 'ICONIC-animated-aura-light-email.gif'),
+                  (os.path.join(G, 'aura-gold-white.gif'), 'ICONIC-animated-aura-white-email.gif')]
+    main_readme = ('ICONIC animated aura\n\n'
+                   'Dark: gold on Noir, for dark backgrounds.\n'
+                   'Light: gold on Blanc (#EDEDEA), the brand\'s light background, with a Noir wordmark.\n'
+                   'White: the light version on pure white (#FFFFFF), for placements that must be white, such as '
+                   'websites and emails.\n\n'
+                   'MP4: 1920 x 1080, 10-second seamless loop. For screens, websites, video, events and presentations.\n'
+                   'GIF: 320 x 320, the same lights at 10 fps, with the logo held still. For email newsletters and '
+                   'launches. Outlook for Windows shows only the first frame, which is the static logo. For email '
+                   'signatures, use the static logo PNG instead.\n\n'
+                   'Transparent versions (ProRes 4444 with alpha) for video editing are a separate download:\n'
+                   f'{RELEASE_URL}\n')
+    alpha_files = [(os.path.join(V, 'aura-gold-alpha.mov'), 'ICONIC-animated-aura-dark-transparent.mov'),
+                   (os.path.join(V, 'aura-gold-light-alpha.mov'), 'ICONIC-animated-aura-light-transparent.mov')]
+    alpha_readme = ('ICONIC animated aura, transparent\n\n'
+                    'ProRes 4444 with alpha, 1920 x 1080, 30 fps, 10-second seamless loop, with no background. Same '
+                    'framing and motion as the MP4s, so they can be swapped in directly. For video editing (Premiere Pro, '
+                    'After Effects, Final Cut Pro, DaVinci Resolve) and Keynote.\n\n'
+                    'Dark: Blanc wordmark, for dark backgrounds. The glow is light, so it reads best on dark.\n'
+                    'Light: Noir wordmark, for light backgrounds. The glow is a warm gold tint.\n\n'
+                    'Footage uses straight (unmatted) alpha.\n')
+    for zp, files, readme in ((os.path.join(ROOT, 'assets', 'downloads', 'ICONIC-animated-aura.zip'), main_files, main_readme),
+                              (os.path.join(V, 'ICONIC-animated-aura-transparent.zip'), alpha_files, alpha_readme)):
+        with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
+            for src, name in files:
+                z.write(src, name, compress_type=zipfile.ZIP_STORED)  # already compressed
+            z.writestr('Read me.txt', readme)
+        print('zipped', zp, os.path.getsize(zp) // 1024, 'KB')
 
 
 if __name__ == '__main__':
